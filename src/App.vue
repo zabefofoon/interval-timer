@@ -21,33 +21,30 @@ const play = async () => {
   try {
     await askPermission()
     const serviceWorker = await navigator.serviceWorker.ready;
-    console.log('serviceWorker' in navigator)
-    console.log('PushManager' in window)
     if ('serviceWorker' in navigator
         && 'PushManager' in window) {
       try {
         const registration = await navigator.serviceWorker.ready;
         const data = {action: 'scheduleNotification'};
         registration?.active?.postMessage(data);
+
+        serviceWorker.showNotification('title', {
+          actions: [
+            {
+              title: 'action1',
+              action: 'toTab'
+            },
+            {
+              title: 'action2',
+              action: 'close'
+            }
+          ]
+        })
+
       } catch (error) {
         console.error('Error communicating with service worker:', error);
       }
     }
-
-    /*setTimeout(() => {
-      serviceWorker.showNotification('title', {
-        actions: [
-          {
-            title: 'action1',
-            action: 'toTab'
-          },
-          {
-            title: 'action2',
-            action: 'close'
-          }
-        ]
-      })
-    }, 3000)*/
   } catch (error) {
     console.error('Error while playing audio:', error);
   }
