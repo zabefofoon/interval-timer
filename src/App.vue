@@ -1,29 +1,33 @@
 <template>
   <button @click="play">click</button>
+  <audio ref="audio" src="./assets/alarm.mp3"></audio>
 </template>
 
 <script setup lang="ts">
-import alarm from './assets/alarm.wav'
+import alarm from './assets/alarm.mp3'
+import {ref} from "vue"
+
+const audio = ref<HTMLAudioElement>()
+
+const playAudio = async () => {
+  const audio = new Audio(alarm)
+  await audio.play()
+}
 
 const play = async () => {
+
+  await playAudio()
+
   try {
     await askPermission()
     const serviceWorker = await navigator.serviceWorker.ready;
-    const audioContext = new AudioContext();
-    const response = await fetch(alarm);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-
-    source.start();
-
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
+    console.log('serviceWorker' in navigator)
+    console.log('PushManager' in window)
+    if ('serviceWorker' in navigator
+        && 'PushManager' in window) {
       try {
         const registration = await navigator.serviceWorker.ready;
-        const data = { action: 'scheduleNotification' };
+        const data = {action: 'scheduleNotification'};
         registration?.active?.postMessage(data);
       } catch (error) {
         console.error('Error communicating with service worker:', error);
@@ -49,22 +53,14 @@ const play = async () => {
   }
 }
 
-const askPermission = () => {
-  return new Promise(function (resolve, reject) {
-    const permissionResult = Notification.requestPermission(function (result) {
-      resolve(result);
+const askPermission = () => new Promise((resolve, reject) => {
+  const permissionResult = Notification.requestPermission(resolve)
+  if (permissionResult) permissionResult.then(resolve, reject)
+})
+    .then((permissionResult) => {
+      if (permissionResult !== 'granted')
+        throw new Error('We weren\'t granted permission.')
     })
-
-    if (permissionResult) {
-      permissionResult.then(resolve, reject);
-    }
-  })
-      .then(function (permissionResult) {
-        if (permissionResult !== 'granted') {
-          throw new Error('We weren\'t granted permission.')
-        }
-      })
-}
 </script>
 
 <style scoped>
