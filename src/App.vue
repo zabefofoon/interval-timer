@@ -24,7 +24,7 @@ const play = async () => {
       try {
         const registration = await navigator.serviceWorker.ready;
         const data = { action: 'scheduleNotification' };
-        registration.active.postMessage(data);
+        registration?.active?.postMessage(data);
       } catch (error) {
         console.error('Error communicating with service worker:', error);
       }
