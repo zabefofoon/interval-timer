@@ -1,47 +1,72 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <button @click="play">click</button>
 </template>
 
+<script setup lang="ts">
+import alarm from './assets/alarm.wav'
+
+const play = async () => {
+  try {
+    await askPermission()
+    const serviceWorker = await navigator.serviceWorker.ready;
+    const audioContext = new AudioContext();
+    const response = await fetch(alarm);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+
+    source.start();
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const data = { action: 'scheduleNotification' };
+        registration.active.postMessage(data);
+      } catch (error) {
+        console.error('Error communicating with service worker:', error);
+      }
+    }
+
+    /*setTimeout(() => {
+      serviceWorker.showNotification('title', {
+        actions: [
+          {
+            title: 'action1',
+            action: 'toTab'
+          },
+          {
+            title: 'action2',
+            action: 'close'
+          }
+        ]
+      })
+    }, 3000)*/
+  } catch (error) {
+    console.error('Error while playing audio:', error);
+  }
+}
+
+const askPermission = () => {
+  return new Promise(function (resolve, reject) {
+    const permissionResult = Notification.requestPermission(function (result) {
+      resolve(result);
+    })
+
+    if (permissionResult) {
+      permissionResult.then(resolve, reject);
+    }
+  })
+      .then(function (permissionResult) {
+        if (permissionResult !== 'granted') {
+          throw new Error('We weren\'t granted permission.')
+        }
+      })
+}
+</script>
+
 <style scoped>
-header {
-  line-height: 1.5;
-}
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
 </style>
